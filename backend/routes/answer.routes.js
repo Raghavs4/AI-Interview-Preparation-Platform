@@ -1,9 +1,9 @@
 import express from "express";
-import { generateQuestions } from "../controllers/ai.controller.js";
+import { submitAnswer } from "../controllers/answer.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/generate", authMiddleware, generateQuestions);
+router.post("/submit", authMiddleware, submitAnswer);
 
 export default router;
