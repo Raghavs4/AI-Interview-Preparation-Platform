@@ -6,16 +6,20 @@ export const generateQuestions = async (req, res) => {
     const userId = req.user.id;
     const { interviewId, resumeText, jobDescription } = req.body;
 
-    // 🔥 Get user plan
-    const userResult = await pool.query(
-      "SELECT plan FROM users WHERE id = $1",
+    // ✅ Check active subscription
+    const subResult = await pool.query(
+      `SELECT * FROM subscriptions 
+   WHERE user_id = $1 
+   AND plan = 'premium'
+   AND end_date > NOW()
+   ORDER BY end_date DESC
+   LIMIT 1`,
       [userId]
     );
 
-    const plan = userResult.rows[0]?.plan || "free";
+    const isPremium = subResult.rows.length > 0;
 
-    // ✅ Decide number of questions
-    const questionCount = plan === "premium" ? 20 : 8;
+    const questionCount = isPremium ? 20 : 8;
 
     const questions = await generateQuestionsService({
       interviewId,
@@ -24,11 +28,13 @@ export const generateQuestions = async (req, res) => {
       questionCount,
     });
 
+    const subscription = subResult.rows[0];
+
     res.json({
       success: true,
-      plan,
-      totalQuestions: questionCount,
-      questions,
+  plan: isPremium ? "premium" : "free",
+  expiresAt: subscription?.end_date || null,
+  questions,
     });
 
   } catch (error) {
